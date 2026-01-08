@@ -36,6 +36,10 @@ In 3D mode, while facing upward or downward (along the positive/negative Z-axis)
 
 This may sound a bit quirky, and it is, but after a few tries, you will be able to navigate the 3D grid smoothly. I recommend starting with a lower game speed to practice these controls.
 
+## How to run
+
+Transfer the .hpprgm program file via the HP Connectivity Kit and launch it from the Programs section.
+
 ---
 
 ## Others:

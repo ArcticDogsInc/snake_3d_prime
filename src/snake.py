@@ -1,7 +1,7 @@
 #PYTHON Snake3D
 
 #-----------------------------------------------------------------------
-# SNAKE_ISO_2 - Isometric 3D Snake for HP Prime
+# Snake3D v1.0 - Isometric 3D Snake for HP Prime
 # Copyright (C) 2026 ArcticDogsInc
 #
 # This program is free software: you can redistribute it and/or modify
