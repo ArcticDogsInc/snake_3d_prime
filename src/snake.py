@@ -139,30 +139,46 @@ class Snake():
         self.body.insert(0, self.tail())
 
 class Prey():
+    color = PREY_COLOR
+    outline = PREY_OUTLINE_COLOR
+    body = [0]
+
     def __init__(self):
-        self.color = PREY_COLOR
-        self.outline = PREY_OUTLINE_COLOR
-        self.body = [
-            random.randint(MIN_X, MAX_X-1), 
-            random.randint(MIN_Y, MAX_Y-1), 
-            random.randint(MIN_Z, MAX_Z-1)]
+        self.spawn(None)
 
-    def spawn(self):
-        self.body = [
-            random.randint(MIN_X, MAX_X-1), 
-            random.randint(MIN_Y, MAX_Y-1), 
-            random.randint(MIN_Z, MAX_Z-1)]
+    def spawn(self, snake):
+        width = MAX_X - MIN_X
+        height = MAX_Y - MIN_Y
+        depth = MAX_Z - MIN_Z
+        total_cells = width * height * depth
 
-    def reset(self, snake):
-        self.spawn()
-        prey_spawn_busy = True
-        while prey_spawn_busy:
-            for snake_block in snake.body:
-                if snake_block == self.body: 
-                    self.spawn() # found snake, respawn
-                    break
-                if snake_block == snake.body[-1]:
-                    prey_spawn_busy = False # last block check passed, new prey is unobstructed
+        if not snake:
+            self.body = [
+                random.randint(MIN_X, MAX_X-1), 
+                random.randint(MIN_Y, MAX_Y-1), 
+                random.randint(MIN_Z, MAX_Z-1)]
+            return
+
+        occupied_indices = set()
+        for p in snake.body:
+            idx = (p[0] - MIN_X) + (p[1] - MIN_Y) * width + (p[2] - MIN_Z) * width * height
+            occupied_indices.add(idx)
+
+        all_indices = range(total_cells)
+        allowed_indices = [i for i in all_indices if i not in occupied_indices]
+
+        if not allowed_indices:
+            self.body = [] # WIN
+            return
+
+        choice = random.choice(allowed_indices)
+        
+        z = choice // (width * height)
+        rem = choice % (width * height)
+        y = rem // width
+        x = rem % width
+
+        self.body = [x + MIN_X, y + MIN_Y, z + MIN_Z]
 
 class World():
     def __init__(self):
@@ -285,15 +301,21 @@ class World():
             p2 = self.iso_to_2d(MAX_X, y, MIN_Z)
             h.line(1, p1[0], p1[1], p2[0], p2[1], grid_color)
 
-    def game_over_animation(self):
+    def game_over_animation(self, win):
         for x in range(MIN_X, MAX_X):
             for z in range(MIN_Z, MAX_Z):
                 for y in range(MIN_Y, MAX_Y):
-                    self.draw_cube([x,y,z], 0xFF0000, False)
+                    if win:
+                        self.draw_cube([x,y,z], random.randint(0x333333, 0xFFFFFF), False)
+                    else:
+                        self.draw_cube([x,y,z], 0xFF0000, False)
             h.blit(0, 0, 0, 1)
             if MAP_SIZE < 3:
                 wait(0.001)
-        h.eval('TEXTOUT_P("GAME OVER", G1, 100, 110, 6, 65535, 200, 0')
+        if win:
+            h.eval('TEXTOUT_P("YOU WIN!!!", G1, 100, 110, 6, 65535, 200, 0')
+        else:
+            h.eval('TEXTOUT_P("GAME OVER", G1, 100, 110, 6, 65535, 200, 0')
         if score > get_high_score():
             save_high_score(score)
             h.eval('TEXTOUT_P("HIGH SCORE!!!", G1, 90, 160, 6, 0, 200, 16776960)')
@@ -413,7 +435,10 @@ class Game:
     KEY_4 = 37
     KEY_6 = 39
     KEY_ENTER = 30
+    KEY_9 = 34
+    KEY_7 = 32
     def update_direction(self, key, velocity):
+
         if key == self.KEY_LEFT or key == self.KEY_4:
             if abs(velocity[2]) == 1:
                 velocity[:] = [0, 1, 0]
@@ -494,11 +519,14 @@ class Game:
             if self.snake.head() == self.prey.body:
                 score += 1
                 self.snake.grow()
-                self.prey.reset(self.snake)
+                self.prey.spawn(self.snake)
+                if self.prey.body == []:
+                    self.world.game_over_animation(True)
+                    self.state = self.State.GAME_OVER 
             
             for snake_block in self.snake.body[:-1]:
                 if self.snake.head() == snake_block: # game over
-                    self.world.game_over_animation()
+                    self.world.game_over_animation(False)
                     self.state = self.State.GAME_OVER 
 
             self.world.load_buffer(self.snake, self.prey)
@@ -526,7 +554,6 @@ def main():
     world = World()
     snake = Snake()
     prey = Prey()
-    prey.reset(snake)
     game = Game(world, snake, prey)
 
     graphic.clear_screen()
@@ -543,10 +570,10 @@ def main():
 main()
 #END
 
-//EXPORT SNAKE_3D()
+EXPORT SNAKE_3D()
 
-START()
+// START()
 BEGIN
     PYTHON(Snake3D);
-    //FREEZE;
+    FREEZE;
 END;
