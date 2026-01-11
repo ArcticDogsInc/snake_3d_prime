@@ -2,6 +2,8 @@
 
 An isometric 3D Snake for the HP Prime. I don't own the original Snake.
 
+<img src="./pics/3d_m_shadows.png">
+
 ## Game modes
 
 - **Classic**: This mode is essentially an isometric variant of the classic 2D Snake.
