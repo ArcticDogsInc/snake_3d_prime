@@ -1,7 +1,7 @@
 #PYTHON Snake3D
 
 #-----------------------------------------------------------------------
-# Snake3D v1.0 - Isometric 3D Snake for HP Prime
+# Snake3D v1.1 - Isometric 3D Snake for HP Prime
 # Copyright (C) 2026 ArcticDogsInc
 #
 # This program is free software: you can redistribute it and/or modify
@@ -92,9 +92,16 @@ def show_settings_menu():
 def wait(t_s):
     h.eval('WAIT({})'.format(t_s))
 
+def get_hiscore_var_name():
+    d = str(GAME_DIMENSIONS) + "D"
+    s = ["S", "M", "L"][MAP_SIZE - 1]
+    v = ["S", "N", "F"][GAME_SPEED - 1]
+    return "SNAKE3D_HI_{}_{}_{}".format(d, s, v)
+
 def get_high_score():
+    hiscore_var = get_hiscore_var_name()
     try:
-        res = h.eval("SNAKE_HI")
+        res = h.eval(str(hiscore_var))
         if res == None:
             return -1
         return int(res)
@@ -102,7 +109,8 @@ def get_high_score():
         return -1
 
 def save_high_score(new_score):
-    h.eval("SNAKE_HI := " + str(int(new_score)))
+    hiscore_var = get_hiscore_var_name()
+    h.eval(hiscore_var + ":=" + str(int(new_score)))
 
 class Snake():
     def __init__(self):
@@ -183,7 +191,6 @@ class Prey():
 class World():
     def __init__(self):
         self.main_buffer = {} 
-        self.iso_to_2d_map = {}
 
     def iso_to_2d(self, x, y, z):
         sx = OFFSET_X + (x - y) * TILE_W
@@ -392,12 +399,12 @@ class World():
 
         if game.state == game.State.RUN:
             global score
-            s_msg = "SCORE: " + str(score)
+            s_msg = "Score: " + str(score)
             h.eval('TEXTOUT_P("' + s_msg + '", G1, 10, 10, 3, 65535)')
 
             hiscore = get_high_score()
             if get_high_score() > 0:
-                s_msg = "HIGH SCORE: " + str(hiscore)
+                s_msg = "High score: " + str(hiscore)
                 h.eval('TEXTOUT_P("' + s_msg + '", G1, 10, 215, 3, 65535)')
 
         # h.blit(target, dx, dy, source)
@@ -537,42 +544,44 @@ class Game:
     def draw(self):
         self.world.render(self)
 
+class Snake3D:
+    def __enter__(self):
+        self.separator = int(h.eval('HSeparator')) # Save the current separator state and set it to 0
+        h.eval('HSeparator := 0')
 
-def main():
-    global millis
+        show_settings_menu() # prompt user game settings
+        if get_high_score() < 0: save_high_score(0) # init hiscore var if needed
 
-    if get_high_score() < 0:
-        save_high_score(0)
+        h.dimgrob(1, SCREEN_W, SCREEN_H, 0x0000) # init G1
 
-    show_settings_menu()
+        # init game objects
+        self.world = World() 
+        self.snake = Snake()
+        self.prey = Prey()
+        self.game = Game(self.world, self.snake, self.prey)
+        return self
 
-    graphic.clear_screen()
-    graphic.draw_rectangle(0, 0, SCREEN_W, SCREEN_H, graphic.black)
+    def __exit__(self, exc_type, exc_val, exc_tb):
+        h.eval('HSeparator := ' + repr(self.separator)) # reset separator
+        return exc_type is KeyboardInterrupt
 
-    h.dimgrob(1, SCREEN_W, SCREEN_H, 0x0000)
-
-    world = World()
-    snake = Snake()
-    prey = Prey()
-    game = Game(world, snake, prey)
-
-    graphic.clear_screen()
-    graphic.draw_rectangle(0, 0, SCREEN_W, SCREEN_H, graphic.black)
-
-    while True:
-        wait(0.010)
-        millis += 10
-        if millis >= BASE_REFRESH_T_MS / GAME_SPEED:
-            millis = 0
-            game.update()
-            game.draw()
-
-main()
+    def run(self):
+        with self:
+            global millis
+            h.eval('RECT()')
+            
+            while True:
+                wait(0.010)
+                millis += 10
+                if millis >= BASE_REFRESH_T_MS / GAME_SPEED:
+                    millis = 0
+                    self.game.update()
+                    self.game.draw()
+                    
+Snake3D().run()
 #END
 
 EXPORT SNAKE_3D()
-
-// START()
 BEGIN
     PYTHON(Snake3D);
     FREEZE;
