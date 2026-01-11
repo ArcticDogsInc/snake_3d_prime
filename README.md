@@ -16,6 +16,10 @@ An isometric 3D Snake for the HP Prime. I don't own the original Snake.
 
 ## Controls
 
+**Directional arrows and 8,2,4,6 number keys (recommended) are supported.**
+
+**ENTER key - Pause/Resume**
+
 <img src="./pics/controls.png">
 
 In 2D mode, the snake's direction is controlled by the Right and Left directional keys. The change in direction is always relative to the snake's head rather than the map; for example, tapping "Right" will rotate the head to its own right.
